@@ -185,6 +185,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5aa8034f5453524a9ce74fbc12ebfe9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  groundY: -55.489
+  P_Ball: {fileID: 1427730131652061409, guid: 93dffa6b14f683f4d98d36f6346b7871, type: 3}
+  P_GreenOrb: {fileID: 3815753778697798476, guid: 32a9363fab1a7a447a01dd26a85e5a55,
+    type: 3}
+  P_Block: {fileID: 3656463404502340240, guid: e61ae1e2b60c9f845a6b36c2591575dd, type: 3}
+  P_ParticleBlue: {fileID: 2361138662377757821, guid: 93415cd8706f6ea44910e82f587cf9fb,
+    type: 3}
+  P_ParticleGreen: {fileID: 251323552284833804, guid: fc6a2f37fc8f5d64ca00f532527e54a6,
+    type: 3}
+  P_ParticleRed: {fileID: 9218755475392947728, guid: f424cac5842b54748a99ff1642f61a40,
+    type: 3}
+  BallPreview: {fileID: 983880435}
+  Arrow: {fileID: 2123162764}
+  GameOverPanel: {fileID: 789197020}
+  BallCountTextObj: {fileID: 746675743}
+  BallPlusTextObj: {fileID: 1421280553}
+  GreenBallGroup: {fileID: 1441058660}
+  BlockGroup: {fileID: 2075308920}
+  BallGroup: {fileID: 877717481}
+  MouseLR: {fileID: 1075935325}
+  BallLR: {fileID: 1924188206}
+  BestScoreText: {fileID: 912831767}
+  ScoreText: {fileID: 1041409382}
+  BallCountText: {fileID: 1958153558}
+  BallPlusText: {fileID: 2005617620}
+  FinalScoreText: {fileID: 1325193249}
+  NewRecordText: {fileID: 1641329043}
+  blockColor:
+  - {r: 1, g: 0.25490198, b: 0.31764707, a: 1}
+  - {r: 1, g: 0.30980393, b: 0.31764707, a: 1}
+  - {r: 1, g: 0.37254903, b: 0.33333334, a: 1}
+  - {r: 0.9960785, g: 0.43921572, b: 0.3529412, a: 1}
+  - {r: 0.9843138, g: 0.5019608, b: 0.3803922, a: 1}
+  - {r: 0.9686275, g: 0.56078434, b: 0.4156863, a: 1}
+  - {r: 0.95294124, g: 0.62352943, b: 0.45098042, a: 1}
+  greenColor: {r: 0.25490198, g: 0.69803923, b: 0.23529413, a: 1}
+  S_GameOver: {fileID: 1572125441}
+  S_GreenOrb: {fileID: 1224401360}
+  S_Plus: {fileID: 327089496}
+  S_Block:
+  - {fileID: 271774176}
+  - {fileID: 581806373}
+  - {fileID: 753107397}
+  QI: {x: 0, y: 0, z: 0, w: 1}
+  shotTrigger: 0
+  shotable: 0
+  veryFirstPos: {x: 0, y: 0, z: 0}
+  RB: {fileID: 0}
+  isMoving: 0
 --- !u!4 &176553045
 Transform:
   m_ObjectHideFlags: 0
@@ -748,7 +797,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 9.7, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 652111920}
@@ -2670,7 +2719,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1724805497}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 176553044}
+        m_MethodName: Restart
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &1724805497
