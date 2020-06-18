@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -38,6 +37,11 @@ public class OneCommand : MonoBehaviour
             StartCoroutine(OnCollisionEnter2D_BALL(col));
     }
 
+    private void OnTriggerEnter2D(Collider2D col)
+    {
+        if (CompareTag("Ball"))
+            StartCoroutine(OnTriggerEnter2D_BALL(col));
+    }
 
 
     #endregion
@@ -144,6 +148,62 @@ public class OneCommand : MonoBehaviour
         }
         Instantiate(P_GreenOrb, SpawnList[Random.Range(0, SpawnList.Count)], QI).transform.SetParent(BlockGroup);
 
+        // 블럭 내리기
+        isBlockMoving = true;
+        for (int i = 0; i < BlockGroup.childCount; i++)
+            StartCoroutine(BlockMoveDown(BlockGroup.GetChild(i)));
+    }
+
+    IEnumerator BlockMoveDown(Transform TR)
+    {
+        yield return new WaitForSeconds(0.2f);
+        Vector3 targetPos = TR.position + new Vector3(0, -12.8f, 0);
+        BlockColorChange();
+
+        // 0.3초간 블럭 이동
+        float TT = 1.5f;
+        while (true)
+        {
+            yield return null;
+            TT -= Time.deltaTime * 1.5f;
+            TR.position = Vector3.MoveTowards(TR.position, targetPos + new Vector3(0, -6, 0), TT);
+
+            if (TR.position == targetPos + new Vector3(0, -6, 0))
+                break;
+
+        }
+        TT = 0.9f;
+        while (true)
+        {
+            yield return null;
+            TT -= Time.deltaTime;
+            TR.position = Vector3.MoveTowards(TR.position, targetPos, TT);
+            if (TR.position == targetPos)
+                break;
+        }
+        isBlockMoving = false;
+    }
+
+
+    public void BlockColorChange()
+    {
+        // 블럭텍스트 / 스코어를 7등분해서 색을 칠함
+        for(int i=0; i < BlockGroup.childCount; i++)
+        {
+            if(BlockGroup.GetChild(i).CompareTag("Block"))
+            {
+                float per = int.Parse(BlockGroup.GetChild(i).GetChild(0).GetComponentInChildren<Text>().text) / (float)score;
+                Color curColor;
+                if (per <= 0.1428f) curColor = blockColor[6];
+                else if (per <= 0.2856f) curColor = blockColor[5];
+                else if (per <= 0.4284f) curColor = blockColor[4];
+                else if (per <= 0.5172f) curColor = blockColor[3];
+                else if (per <= 0.0714f) curColor = blockColor[2];
+                else if (per <= 0.8568f) curColor = blockColor[1];
+                else curColor = blockColor[0];
+                BlockGroup.GetChild(i).GetComponent<SpriteRenderer>().color = curColor;
+            }
+        }
     }
 
     #endregion
@@ -156,6 +216,28 @@ public class OneCommand : MonoBehaviour
         // 카메라를 월드포인트로 바꾸고, 기본 카메라는 z값이 -10이기때문에 10을 더해줘서 첫번째 포지션을 잡아준다
 
 
+        // 모든 움직임이 끝나면 쏠 수 있음
+        shotable = true;
+        for (int i = 0; i < BallGroup.childCount; i++)
+            if (BallGroup.GetChild(i).GetComponent<OneCommand>().isMoving)
+                shotable = false;
+
+        if (isBlockMoving) 
+            shotable = false;
+        if (!shotable)
+            return;
+
+
+        if(shotTrigger && shotable)
+        {
+            shotTrigger = false;
+            BlockGenerator();
+            timeDelay = 0;
+        }
+
+        timeDelay += Time.deltaTime;
+        if (timeDelay < 0.1f)
+            return; // 0.1초 딜레이로 너무 빠르게 손 떼면 라인이 남는 버그 제거
 
         bool isMouse = Input.GetMouseButton(0); // isMouse는 계속 사용될 변수로 눌러진 상태를 의미
 
@@ -224,6 +306,7 @@ public class OneCommand : MonoBehaviour
     #region BallScript.Cs
 
     [Header("BallScriptValue")]
+    public GameObject P_GreenBall;
     public Rigidbody2D RB;
     public bool isMoving;
 
@@ -241,7 +324,7 @@ public class OneCommand : MonoBehaviour
     }
 
 
-    private IEnumerator OnCollisionEnter2D_BALL(Collision2D col)
+    IEnumerator OnCollisionEnter2D_BALL(Collision2D col)
     {
         yield return null;
         GameObject Col = col.gameObject;
@@ -266,6 +349,55 @@ public class OneCommand : MonoBehaviour
             }
         }
         
+        // 블럭충돌시 블럭숫자 1씩 줄이다 0이 되면 부숨
+        if(Col.CompareTag("Block"))
+        {
+            Text BlockText = col.transform.GetChild(0).GetComponentInChildren<Text>();
+            int blockValue = int.Parse(BlockText.text) - 1;
+            GM.BlockColorChange();
+
+            for(int i=0; i< GM.S_Block.Length; i++)
+            {
+                if (GM.S_Block[i].isPlaying) continue;
+                else { GM.S_Block[i].Play(); break; }
+            }
+
+            if(blockValue > 0)
+            {
+                BlockText.text = blockValue.ToString();
+                Col.GetComponent<Animator>().SetTrigger("Shock");
+            }
+            else
+            {
+                Destroy(Col);
+                Destroy(Instantiate(GM.P_ParticleRed, col.transform.position, GM.QI), 1);
+            }
+        }
+
+    }
+
+
+    IEnumerator OnTriggerEnter2D_BALL(Collider2D col)
+    {
+        // 초록구 충돌시 초록공 생성해서 아래로 떨어짐
+        if(col.gameObject.CompareTag("GreenOrb"))
+        {
+            Destroy(col.gameObject);
+            Destroy(Instantiate(GM.P_ParticleGreen, col.transform.position, GM.QI), 1);
+
+            GM.S_GreenOrb.Play();
+            Transform TR = Instantiate(P_GreenBall, col.transform.position, GM.QI).transform;
+            TR.SetParent(GameObject.Find("GreenBallGroup").transform);
+            Vector3 targetPos = new Vector3(TR.position.x, GM.groundY, 0);
+
+            while(true)
+            {
+                yield return null;
+                TR.position = Vector3.MoveTowards(TR.position, targetPos, 2.5f);
+                if (TR.position == targetPos)
+                    yield break;
+            }
+        }
     }
 
 

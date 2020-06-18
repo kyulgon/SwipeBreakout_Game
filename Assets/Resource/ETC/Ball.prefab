@@ -270,5 +270,7 @@ MonoBehaviour:
   shotTrigger: 0
   shotable: 0
   veryFirstPos: {x: 0, y: 0, z: 0}
+  P_GreenBall: {fileID: 6960092542580709548, guid: 5a04dfe23abedbe4a9cc412ac546f075,
+    type: 3}
   RB: {fileID: 5613293997399208530}
   isMoving: 0
