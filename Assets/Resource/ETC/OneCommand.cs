@@ -86,7 +86,7 @@ public class OneCommand : MonoBehaviour
         else
         {
             rect.width = scalewidth;
-            rect.x = (1f / scalewidth) / 2f;
+            rect.x = (1f - scalewidth) / 2f;
         }
         camera.rect = rect;
 
@@ -472,7 +472,7 @@ public class OneCommand : MonoBehaviour
             if(blockValue > 0)
             {
                 BlockText.text = blockValue.ToString();
-                Col.GetComponent<Animator>().SetTrigger("Shock");
+                Col.GetComponent<Animator>().SetTrigger("Shoke");
             }
             else
             {
