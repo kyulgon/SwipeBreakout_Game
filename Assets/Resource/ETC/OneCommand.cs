@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -160,6 +161,17 @@ public class OneCommand : MonoBehaviour
         Vector3 targetPos = TR.position + new Vector3(0, -12.8f, 0);
         BlockColorChange();
 
+        // 막줄이면 게임오버 트리거, 콜라이더 비활성화
+        if(targetPos.y < -50)
+        {
+            if (TR.CompareTag("Block"))
+                isDie = true;
+
+            for (int i = 0; i < BallGroup.childCount; i++)
+                BallGroup.GetChild(i).GetComponent<CircleCollider2D>().enabled = false;
+        }
+
+
         // 0.3초간 블럭 이동
         float TT = 1.5f;
         while (true)
@@ -182,6 +194,42 @@ public class OneCommand : MonoBehaviour
                 break;
         }
         isBlockMoving = false;
+
+
+        // 이동되고 난 후 막줄이고 블럭이면 게임오버, 초록공이면 파괴
+        if(targetPos.y < -50)
+        {
+            if(TR.CompareTag("Block"))
+            {
+                for (int i = 0; i < BallGroup.childCount; i++)
+                    Destroy(BallGroup.GetChild(i).gameObject);
+
+                Destroy(Instantiate(P_ParticleBlue, veryFirstPos, QI), 1);
+
+                BallCountTextObj.SetActive(false);
+                BallPlusTextObj.SetActive(false);
+                BestScoreText.gameObject.SetActive(false);
+                ScoreText.gameObject.SetActive(false);
+
+                GameOverPanel.SetActive(true);
+                FinalScoreText.text = "최종점수 : " + score.ToString();
+
+                if (isNewRecord)
+                    NewRecordText.gameObject.SetActive(true);
+
+                Camera.main.GetComponent<Animator>().SetTrigger("Shake");
+                S_GameOver.Play();
+            }
+            else
+            {
+                Destroy(TR.gameObject);
+                Destroy(Instantiate(P_ParticleGreen, TR.position, QI), 1);
+
+                for (int i = 0; i < BallGroup.childCount; i++)
+                    BallGroup.GetChild(i).GetComponent<CircleCollider2D>().enabled = true;
+            }
+        }
+
     }
 
 
@@ -210,6 +258,8 @@ public class OneCommand : MonoBehaviour
 
     void Update_GM()
     {
+        if (isDie) return;
+
         // 마우스 첫번째 좌표
         if (Input.GetMouseButtonDown(0)) // 마우스를 누를때
             firstPos = Camera.main.ScreenToWorldPoint(Input.mousePosition) + new Vector3(0, 0, 10);
@@ -227,12 +277,16 @@ public class OneCommand : MonoBehaviour
         if (!shotable)
             return;
 
-
+        // 모든 공이 바닥에 부딪히면 한 번 실행
         if(shotTrigger && shotable)
         {
             shotTrigger = false;
             BlockGenerator();
             timeDelay = 0;
+
+            StartCoroutine(BallCountTextShow(GreenBallGroup.childCount));
+            for (int i = 0; i < GreenBallGroup.childCount; i++)
+                StartCoroutine(GreenBallMove(GreenBallGroup.GetChild(i)));
         }
 
         timeDelay += Time.deltaTime;
@@ -284,6 +338,51 @@ public class OneCommand : MonoBehaviour
         }
     }
 
+    IEnumerator BallCountTextShow(int greenBallCount)
+    {
+        // 초록공 합쳐지기 전후 공 개수 보여주기
+        BallCountTextObj.transform.position = new Vector3(Mathf.Clamp(veryFirstPos.x, -49.9f, 49.9f), -65, 0);
+        BallCountText.text = "x" + BallGroup.childCount.ToString();
+
+        yield return new WaitForSeconds(0.17f);
+
+        if (BallGroup.childCount > score)
+            Destroy(BallGroup.GetChild(BallGroup.childCount - 1).gameObject);
+        BallCountText.text = "x" + BallGroup.childCount.ToString();
+
+
+        // 바닥에 떨어진 초록공 +로 표시하기
+        if(greenBallCount != 0)
+        {
+            BallPlusTextObj.SetActive(true);
+            BallPlusTextObj.transform.position = new Vector3(Mathf.Clamp(veryFirstPos.x, -49.9f, 49.9f), -47, 0);
+            BallPlusText.text = "+" + greenBallCount.ToString();
+            S_Plus.Play();
+
+            yield return new WaitForSeconds(0.5f);
+
+            BallPlusTextObj.SetActive(false);
+        }
+    }
+
+    IEnumerator GreenBallMove(Transform TR)
+    {
+        // 바닥에 떨어진 초록공 최초좌표로 0.17초간 이동
+        Instantiate(P_Ball, veryFirstPos, QI).transform.SetParent(BallGroup);
+        float speed = (TR.position - veryFirstPos).magnitude / 12f;
+        while(true)
+        {
+            yield return null;
+            TR.position = Vector3.MoveTowards(TR.position, veryFirstPos, speed);
+            if(TR.position == veryFirstPos)
+            {
+                Destroy(TR.gameObject);
+                yield break;
+            }
+        }
+    }
+
+
     private void FixedUpdate_GM()
     {
         // 0.06초 간격으로 공 발사
@@ -291,11 +390,11 @@ public class OneCommand : MonoBehaviour
         {
             timerCount = 0;
             BallGroup.GetChild(launchIndex++).GetComponent<OneCommand>().Launch(gap);
+            BallCountText.text = "x" + (BallGroup.childCount - launchIndex).ToString();
             if(launchIndex == BallGroup.childCount)
             {
                 timerStart = false;
                 launchIndex = 0;
-                timerCount = 0;
                 BallCountText.text = "";
             }
         }
@@ -326,9 +425,17 @@ public class OneCommand : MonoBehaviour
 
     IEnumerator OnCollisionEnter2D_BALL(Collision2D col)
     {
-        yield return null;
         GameObject Col = col.gameObject;
         Physics2D.IgnoreLayerCollision(2, 2); // 공끼리 충돌을 안함
+
+        // 가로로 움직일경우 아래로 내림
+        Vector2 pos = RB.velocity.normalized;
+        if(pos.magnitude != 0 && pos.y < 0.15f && pos.y > -0.15f)
+        {
+            RB.velocity = Vector2.zero;
+            RB.AddForce(new Vector2(pos.x > 0 ? 1 : -1, -0.2f).normalized * 7000);
+        }
+
 
         //바닥충돌시 최초좌표로 이동
         if (Col.CompareTag("Ground"))
